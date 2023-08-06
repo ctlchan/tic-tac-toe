@@ -42,7 +42,24 @@ body {
 }
 
 .cell {
-    border: 1px var(--color-primary) solid;
+    border-color: var(--color-primary);
+    border-width: 1px;
+}
+
+.top {
+    border-top-style: solid;
+}
+
+.left {
+    border-left-style: solid;
+}
+
+.right {
+    border-right-style: solid;
+}
+
+.bottom {
+    border-bottom-style: solid;
 }
 
 .grid {
