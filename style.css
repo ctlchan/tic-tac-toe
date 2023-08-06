@@ -7,6 +7,7 @@
 :root {
     --color-primary: #0063b2FF;
     --color-secondary: #9CC3D5FF;
+    --cell-size: 200px;
     height: 100%;
 }
 
@@ -36,6 +37,20 @@ body {
     flex-direction: column;
 }
 
+.scores {
+    width: calc(var(--cell-size) * 3);
+}
+
+.cell {
+    border: 1px var(--color-primary) solid;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: var(--cell-size) var(--cell-size) var(--cell-size);
+    grid-template-rows:    var(--cell-size) var(--cell-size) var(--cell-size);
+}
+
 header {
     background-color: var(--color-primary);
     height: max(150px, 20%);
@@ -49,4 +64,5 @@ header {
 section {
     background-color: var(--color-secondary);
     flex-grow: 1;
+    color: var(--color-primary);
 }
