@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
     <title>Tic-Tac-Toe</title>
 </head>
 <body>
@@ -18,15 +19,15 @@
                 <div class="score">2</div>
             </div>
             <div class="grid">
-                <div class="cell flex-center top left"></div>
-                <div class="cell flex-center top left right"></div>
-                <div class="cell flex-center top right"></div>
-                <div class="cell flex-center top left"></div>
-                <div class="cell flex-center top left right"></div>
-                <div class="cell flex-center top right"></div>
-                <div class="cell flex-center top left bottom"></div>
-                <div class="cell flex-center top left right bottom"></div>
-                <div class="cell flex-center top right bottom"></div>
+                <div class="cell flex-center top left" data-index="0"></div>
+                <div class="cell flex-center top left right" data-index="1"></div>
+                <div class="cell flex-center top right" data-index="2"></div>
+                <div class="cell flex-center top left" data-index="3"></div>
+                <div class="cell flex-center top left right" data-index="4"></div>
+                <div class="cell flex-center top right" data-index="5"></div>
+                <div class="cell flex-center top left bottom" data-index="6"></div>
+                <div class="cell flex-center top left right bottom" data-index="7"></div>
+                <div class="cell flex-center top right bottom" data-index="8"></div>
             </div>
             <div class="message">Player X wins</div>
         </div>

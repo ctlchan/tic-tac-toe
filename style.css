@@ -44,6 +44,7 @@ body {
 .cell {
     border-color: var(--color-primary);
     border-width: 1px;
+    font-size: 100px;
 }
 
 .top {
@@ -60,6 +61,10 @@ body {
 
 .bottom {
     border-bottom-style: solid;
+}
+
+.message {
+    visibility: hidden;
 }
 
 .grid {
