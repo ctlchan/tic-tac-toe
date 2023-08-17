@@ -86,6 +86,7 @@ const displayController = (() => {
 
     const grid = document.querySelector('.grid').children;
     const message = document.querySelector('.message');
+    const scores = document.querySelectorAll('.score');
 
     // Update the UI based on the state of the gameboard
     const updateDisplay = () => {
@@ -108,16 +109,21 @@ const displayController = (() => {
     }
 
     // Reset the display by updating it and re-establishing click listeners - assumes the board state has been reset before
-    const reset = () => {
+    const reset = (reset = false) => {
         message.style.visibility = 'hidden';
+        updateScore(reset);
         updateDisplay()
         setUpListeners();
     }
 
     // Add click listeners to grid cells
-    const setUpListeners = () => {
+    const setUpListeners = (remove = false) => {
         for (let i = 0; i < 9; i++) {
-            grid[i].addEventListener('click', _makeMove);
+            if (!remove)
+                grid[i].addEventListener('click', _makeMove);
+
+            else
+                grid[i].removeEventListener('click', _makeMove);
         }
     }
 
@@ -141,19 +147,41 @@ const displayController = (() => {
         }
 
         else {
-            message.textContent = `Player ${game.getPlayerOnesTurn ? '1': '2'} wins!`
+            message.textContent = `Player ${game.getPlayerOnesTurn() ? '1': '2'} wins!`
         }
 
         message.style.visibility = 'visible';
+
+        message.addEventListener('mouseover', messageToReset)
     }
 
     const messageToReset = () => {
         let beforeText = message.textContent;
+        message.textContent = 'Play Again?';
 
-        
+        message.addEventListener('click', game.newRound )
+        message.addEventListener('mouseout', () => {
+            message.textContent = beforeText;
+            message.removeEventListener('click', game.newRound);
+        })
     }
 
-    return {grid, reset, displayResultMessage}
+    const updateScore = (reset = false) => {
+
+        if (reset) {
+            scores[0].textContent = 0;
+            scores[1].textContent = 0;
+        }
+
+        else {
+            let newScores = game.getScores();
+
+            scores[0].textContent = newScores['p1Score'];
+            scores[1].textContent = newScores['p2Score']
+        }
+    }
+
+    return {grid, reset, displayResultMessage, updateScore, setUpListeners}
 })();
 
 
@@ -162,6 +190,7 @@ const game = (() => {
 
     let playerOnesTurn = true;
     let turnNumber = 1;
+    const scores = {p1Score: 0, p2Score: 0};
 
     const getPlayerOnesTurn = () => playerOnesTurn;
 
@@ -169,9 +198,25 @@ const game = (() => {
 
     const incrTurnNum = () => turnNumber++;
 
+    const getScores = () => scores;
+
     const initialize = () => {
+
+        playerOnesTurn = true;
+        turnNumber = 1;
+        scores['p1Score'] = 0;
+        scores['p2Score'] = 0;
+
         gameboard.reset();
-        displayController.reset();
+        displayController.reset(true);
+    }
+
+    const newRound = () => {
+        playerOnesTurn = true;
+        turnNumber = 1;
+
+        gameboard.reset();
+        displayController.reset(false);
     }
 
     // Return true if the given cell lands on a winning line - intended to be called after a move is made as it checks for a win based on whose turn it is
@@ -251,22 +296,26 @@ const game = (() => {
         }
 
         if (turnNumber == 9 && !winner) {
-            // game.end('draw');  -> call message
             displayController.displayResultMessage(true);
         }
     }
 
     const processWin = () => {
+
+        if (playerOnesTurn)
+            scores['p1Score']++;
+        else
+            scores['p2Score']++;
+        
+        displayController.updateScore();
         displayController.displayResultMessage(false);
-
-        // Update message so that it acts as a button?
+        displayController.setUpListeners(true);
+        
     }
-
-
 
     initialize();
 
-    return {initialize, getPlayerOnesTurn, toggleTurn, checkWin, incrTurnNum}
+    return {initialize, newRound, getPlayerOnesTurn, toggleTurn, checkWin, incrTurnNum, getScores}
 
 })()
 
