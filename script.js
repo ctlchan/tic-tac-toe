@@ -30,7 +30,7 @@ const gameSettings = (() => {
         let botDifficulty;
 
         if (isBot) {
-            let difficultySettings = isPlayerOne ? document.querySelector('.playerOneSettings select') : document.querySelector('.playerTwoSettings select');
+            let difficultySettings = forPlayerOne ? document.querySelector('.playerOneSettings select') : document.querySelector('.playerTwoSettings select');
 
             botDifficulty = difficultySettings.value;
         }
@@ -77,7 +77,26 @@ const gameboard = (() => {
         [undefined, undefined, undefined]
     ];
 
-    return { getCell, setCell, reset}
+    const getAvailableCells = () => {
+
+        const result = [];
+        let temp = [];
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+
+                if (board[i][j] == undefined) {
+                    temp.push(i, j);
+                    result.push(temp);
+                    temp = [];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    return { getCell, setCell, reset, getAvailableCells}
 
 })();
 
@@ -115,7 +134,7 @@ const displayController = (() => {
         turnIndicator.textContent = "X's turn"
         updateScore(reset);
         updateDisplay()
-        setUpListeners();
+        // setUpListeners();
     }
 
     // Add click listeners to grid cells
@@ -138,10 +157,11 @@ const displayController = (() => {
         gameboard.setCell(row, col, game.getPlayerOnesTurn());
         updateDisplay();
         e.target.removeEventListener('click', _makeMove);
-        game.checkWin(row, col);
-        game.toggleTurn();
-        turnIndicator.textContent = `${game.getPlayerOnesTurn() ? 'X':'0'}'s turn`;
-        game.incrTurnNum();
+        let win = game.checkWin(row, col);
+        if (!win) {
+            game.toggleTurn();
+            turnIndicator.textContent = `${game.getPlayerOnesTurn() ? 'X':'0'}'s turn`;
+        }
     }
 
     const displayResultMessage = (isTie) => {
@@ -184,26 +204,112 @@ const displayController = (() => {
         }
     }
 
-    return {grid, reset, displayResultMessage, updateScore, setUpListeners}
+    return {grid, reset, displayResultMessage, updateScore, setUpListeners, updateDisplay}
 })();
+
+const PlayerFactory = (isPlayerOne, aiDifficulty = undefined) => {
+
+    // Updates the board with a new move based on the level of the AI
+    const play = () => {
+        
+        if (aiDifficulty != undefined) {
+            let rng = Math.random();
+
+            // aiDifficulty determines the likelihood that the bot uses the minimax algorithm
+            if (rng > aiDifficulty) {
+                let [row, col] = randomMove();
+                console.log({row, col})
+                gameboard.setCell(row, col, isPlayerOne);
+                displayController.updateDisplay();
+                let win = game.checkWin(row, col);
+                console.log({row, col, isPlayerOne})
+
+                // Avoided doing !win because win can be "undefined" and !undefined == true;
+                if (win == false)
+                    game.toggleTurn();
+            }
+        }
+
+    }
+
+    // The bot makes a random move
+    const randomMove = () => {
+
+        let moves = gameboard.getAvailableCells();
+        console.log({moves});
+
+        const random = Math.floor(Math.random() * moves.length);
+
+        return moves[random];
+    }
+
+    // The bot makes a move based on a minimax algorithm
+
+    return {isPlayerOne, isBot: aiDifficulty != undefined,score: 0, play}
+}
 
 
 // IIFE which represents and manages the current game state
 const game = (() => {
 
+    let playerOne;
+    let playerTwo;
     let playerOnesTurn = true;
     let turnNumber = 1;
     const scores = {p1Score: 0, p2Score: 0};
 
     const getPlayerOnesTurn = () => playerOnesTurn;
 
-    const toggleTurn = () => playerOnesTurn = !playerOnesTurn;
+    const toggleTurn = () => {
+
+        // Base functionality
+        playerOnesTurn = !playerOnesTurn;
+        incrTurnNum();
+
+        // Make bot(s) move - if applicable
+        if (playerOne.isBot && playerOnesTurn) {
+            setTimeout(() => {
+                playerOne.play();
+                displayController.updateDisplay();
+                // toggleTurn()
+            }, 300)
+            
+        }
+
+        if (playerTwo.isBot && !playerOnesTurn) {
+            setTimeout( () => {
+                playerTwo.play();
+                displayController.updateDisplay();
+                // toggleTurn()
+            }, 300)
+        }
+    };
 
     const incrTurnNum = () => turnNumber++;
 
     const getScores = () => scores;
 
     const initialize = () => {
+
+        // TODO: figure out why bot AI placement works sometimes (ex. only after manually playing a game);
+
+        let p1Settings = gameSettings.getPlayerSettings(true);
+        let p2Settings = gameSettings.getPlayerSettings(false);
+
+        if (!p1Settings.isBot || !p2Settings.isBot)
+            displayController.setUpListeners();
+
+        if (p1Settings.isBot) {
+            playerOne = PlayerFactory(true, _Difficulty[p1Settings.botDifficulty]);
+            playerOne.play();
+        }
+        else
+            playerOne = PlayerFactory(true);
+
+        if (p2Settings.isBot)
+            playerTwo = PlayerFactory(false, _Difficulty[p2Settings.botDifficulty]);
+        else
+            playerTwo = PlayerFactory(false);
 
         playerOnesTurn = true;
         turnNumber = 1;
@@ -217,6 +323,16 @@ const game = (() => {
     const newRound = () => {
         playerOnesTurn = true;
         turnNumber = 1;
+
+        let p1Settings = gameSettings.getPlayerSettings(true);
+        let p2Settings = gameSettings.getPlayerSettings(false);
+
+        if (p1Settings.isBot) {
+            playerOne.play();
+        }
+
+        if (!p1Settings.isBot || !p2Settings.isBot)
+            displayController.setUpListeners();
 
         gameboard.reset();
         displayController.reset(false);
@@ -294,13 +410,15 @@ const game = (() => {
         }
 
         if (winner) {
-            console.log("winner found!");
             processWin();
         }
 
         if (turnNumber == 9 && !winner) {
             displayController.displayResultMessage(true);
+            winner = undefined;
         }
+
+        return winner
     }
 
     const processWin = () => {
@@ -320,5 +438,8 @@ const game = (() => {
 
     return {initialize, newRound, getPlayerOnesTurn, toggleTurn, checkWin, incrTurnNum, getScores}
 
-})()
+})();
+
+
+
 
