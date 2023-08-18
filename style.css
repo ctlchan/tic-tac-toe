@@ -100,6 +100,10 @@ body {
 
 }
 
+.scores {
+    font-size: 24px;
+}
+
 .grid {
     display: grid;
     grid-template-columns: var(--cell-size) var(--cell-size) var(--cell-size);

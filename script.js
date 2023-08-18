@@ -87,6 +87,7 @@ const displayController = (() => {
     const grid = document.querySelector('.grid').children;
     const message = document.querySelector('.message');
     const scores = document.querySelectorAll('.score');
+    const turnIndicator = document.querySelector('.turn-indicator');
 
     // Update the UI based on the state of the gameboard
     const updateDisplay = () => {
@@ -111,6 +112,7 @@ const displayController = (() => {
     // Reset the display by updating it and re-establishing click listeners - assumes the board state has been reset before
     const reset = (reset = false) => {
         message.style.visibility = 'hidden';
+        turnIndicator.textContent = "X's turn"
         updateScore(reset);
         updateDisplay()
         setUpListeners();
@@ -138,6 +140,7 @@ const displayController = (() => {
         e.target.removeEventListener('click', _makeMove);
         game.checkWin(row, col);
         game.toggleTurn();
+        turnIndicator.textContent = `${game.getPlayerOnesTurn() ? 'X':'0'}'s turn`;
         game.incrTurnNum();
     }
 
