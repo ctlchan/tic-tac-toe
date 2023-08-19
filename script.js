@@ -4,7 +4,7 @@ const gameSettings = (() => {
     
     // Add listener to reload game when settings are changed
     let container = document.querySelector('.gameSettings');
-    container.addEventListener('change', () => {console.log("settings were changed"); game.initialize()}) // TODO: call function to reload game
+    container.addEventListener('change', () => { game.initialize()})
 
     
     // Add listeners to dynamiclly show/hide additional settings based on radio button values
@@ -39,7 +39,7 @@ const gameSettings = (() => {
 
     }
 
-    return { getPlayerSettings}
+    return { getPlayerSettings }
 
 })();
 
@@ -96,7 +96,156 @@ const gameboard = (() => {
         return result;
     }
 
-    return { getCell, setCell, reset, getAvailableCells}
+
+    const _evaluate = (b, player) => {
+
+        // Checking for Rows for X or O victory.
+        for(let row = 0; row < 3; row++)
+        {
+            if (b[row][0] == b[row][1] &&
+                b[row][1] == b[row][2])
+            {
+                if (b[row][0] == player)
+                    return +10;
+                    
+                else if (b[row][0] == !player)
+                    return -10;
+            }
+        }
+    
+        // Checking for Columns for X or O victory.
+        for(let col = 0; col < 3; col++)
+        {
+            if (b[0][col] == b[1][col] &&
+                b[1][col] == b[2][col])
+            {
+                if (b[0][col] == player)
+                    return +10;
+    
+                else if (b[0][col] == !player)
+                    return -10;
+            }
+        }
+    
+        // Checking for Diagonals for X or O victory.
+        if (b[0][0] == b[1][1] && b[1][1] == b[2][2])
+        {
+            if (b[0][0] == player)
+                return +10;
+                
+            else if (b[0][0] == !player)
+                return -10;
+        }
+    
+        if (b[0][2] == b[1][1] && 
+            b[1][1] == b[2][0])
+        {
+            if (b[0][2] == player)
+                return +10;
+                
+            else if (b[0][2] == !player)
+                return -10;
+        }
+    
+        // Else if none of them have
+        // won then return 0
+        return 0;
+    }
+
+    const _minimax = (player, depth, board, isMax) => {
+
+        let availCells = getAvailableCells();
+
+        let score = _evaluate(board, player);
+
+        if (score == 10)
+            return score - depth;
+
+        if (score == -10)
+            return score + depth;
+
+        if (availCells.length == 0)
+            return 0;
+
+        if (isMax) {
+            let best = -1000;
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+
+                    if (board[i][j] == undefined) {
+
+                        // Make move
+                        setCell(i, j, player);
+
+                        // Recurse and find best possible move
+                        best = Math.max(best, _minimax(player, depth + 1, board, !isMax));
+
+                        // Undo move (only "made" within the algorithm which checks all possible game states)
+                        setCell(i, j, undefined);
+                    }
+
+                }
+            }
+
+            return best;
+        }
+
+        // !isMax ==> minimizer's "move"
+        else {
+
+            let best = 1000;
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+
+                    if (board[i][j] == undefined) {
+
+                        // Make move
+                        setCell(i, j, !player);
+
+                        // Recurse and find best possible move
+                        best = Math.min(best, _minimax(player, depth + 1, board, !isMax));
+
+                        // Undo move (only "made" within the algorithm which checks all possible game states)
+                        setCell(i, j, undefined);
+                    }
+
+                }
+            }
+            return best;
+        }
+
+    }
+
+
+    const getBestMove = (player) => {
+
+        let bestVal = -1000;
+        let bestMove = {row: -1, col: -1};
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (board[i][j] == undefined) {
+
+                    setCell(i, j, player);
+
+                    let moveVal = _minimax(player, 0, board, false);
+
+                    setCell(i, j, undefined);
+
+                    if (moveVal > bestVal) {
+                        bestMove.row = i;
+                        bestMove.col = j;
+                        bestVal = moveVal;
+                    }
+                }
+            }
+        }
+        return bestMove;
+    }
+
+    return { getCell, setCell, reset, getAvailableCells, getBestMove}
 
 })();
 
@@ -214,20 +363,25 @@ const PlayerFactory = (isPlayerOne, aiDifficulty = undefined) => {
         
         if (aiDifficulty != undefined) {
             let rng = Math.random();
+            let row, col;
 
             // aiDifficulty determines the likelihood that the bot uses the minimax algorithm
             if (rng > aiDifficulty) {
-                let [row, col] = randomMove();
-                console.log({row, col})
-                gameboard.setCell(row, col, isPlayerOne);
-                displayController.updateDisplay();
-                let win = game.checkWin(row, col);
-                console.log({row, col, isPlayerOne})
-
-                // Avoided doing !win because win can be "undefined" and !undefined == true;
-                if (win == false)
-                    game.toggleTurn();
+                [row, col] = randomMove();
             }
+            else {
+                let move = bestMove();
+                row = move.row;
+                col = move.col;
+            }
+
+            gameboard.setCell(row, col, isPlayerOne);
+            displayController.updateDisplay();
+            let win = game.checkWin(row, col);
+
+            // Avoided doing !win because win can be "undefined" and !undefined == true;
+            if (win == false)
+                game.toggleTurn();
         }
 
     }
@@ -236,7 +390,6 @@ const PlayerFactory = (isPlayerOne, aiDifficulty = undefined) => {
     const randomMove = () => {
 
         let moves = gameboard.getAvailableCells();
-        console.log({moves});
 
         const random = Math.floor(Math.random() * moves.length);
 
@@ -244,6 +397,7 @@ const PlayerFactory = (isPlayerOne, aiDifficulty = undefined) => {
     }
 
     // The bot makes a move based on a minimax algorithm
+    const bestMove = () => gameboard.getBestMove(isPlayerOne)
 
     return {isPlayerOne, isBot: aiDifficulty != undefined,score: 0, play}
 }
@@ -291,7 +445,14 @@ const game = (() => {
 
     const initialize = () => {
 
-        // TODO: figure out why bot AI placement works sometimes (ex. only after manually playing a game);
+        playerOnesTurn = true;
+        turnNumber = 1;
+        scores['p1Score'] = 0;
+        scores['p2Score'] = 0;
+
+        gameboard.reset();
+        displayController.reset(true);
+
 
         let p1Settings = gameSettings.getPlayerSettings(true);
         let p2Settings = gameSettings.getPlayerSettings(false);
@@ -306,18 +467,11 @@ const game = (() => {
         else
             playerOne = PlayerFactory(true);
 
-        if (p2Settings.isBot)
+        if (p2Settings.isBot) 
             playerTwo = PlayerFactory(false, _Difficulty[p2Settings.botDifficulty]);
         else
             playerTwo = PlayerFactory(false);
 
-        playerOnesTurn = true;
-        turnNumber = 1;
-        scores['p1Score'] = 0;
-        scores['p2Score'] = 0;
-
-        gameboard.reset();
-        displayController.reset(true);
     }
 
     const newRound = () => {
@@ -327,22 +481,22 @@ const game = (() => {
         let p1Settings = gameSettings.getPlayerSettings(true);
         let p2Settings = gameSettings.getPlayerSettings(false);
 
+        gameboard.reset();
+        displayController.reset(false);
+
+
         if (p1Settings.isBot) {
             playerOne.play();
         }
 
         if (!p1Settings.isBot || !p2Settings.isBot)
             displayController.setUpListeners();
-
-        gameboard.reset();
-        displayController.reset(false);
     }
 
     // Return true if the given cell lands on a winning line - intended to be called after a move is made as it checks for a win based on whose turn it is
     const checkWin = (row, col) => {
         let winner = false;
 
-        console.log({turnNumber, row, col})
 
         if (turnNumber >= 5) {
             
