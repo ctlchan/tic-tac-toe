@@ -71,18 +71,8 @@ body {
     font-size: 36px;
 }
 
-.player-setup {
-    display: none;
-    position: absolute;
-    left: 35vw;
-    top: 32vh;
-    width: 30%;
-    height: 25%;
-    background-color: white;
-    border-radius: 8px;
-    padding: 24px;
-    font-size: 28px;
-    gap: 12px;
+.gameSettings {
+    padding: 8px 16px 0 16px;
 }
 
 .difficulty {
@@ -90,7 +80,7 @@ body {
 }
 
 .scores {
-    font-size: 24px;
+    font-size: 32px;
 }
 
 .grid {
@@ -101,8 +91,7 @@ body {
 
 header {
     background-color: var(--color-primary);
-    height: max(150px, 20%);
-    height: 150px;
+    height: min(120px, 15%);
     font-size: 36px;
     font-weight: bold;
     padding-left: 24px;
@@ -113,4 +102,20 @@ section {
     background-color: var(--color-secondary);
     flex-grow: 1;
     color: var(--color-primary);
+}
+
+@media(max-width: 640px) {
+    :root {
+        --cell-size: 150px;
+    }
+}
+
+@media(max-width: 475px) {
+    :root {
+        --cell-size: 100px;
+    }
+
+    .cell {
+        font-size: 24px;
+    }
 }
